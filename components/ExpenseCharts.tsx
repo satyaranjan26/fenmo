@@ -155,7 +155,7 @@ export default function ExpenseCharts({ expenses }: ExpenseChartsProps) {
                 <LabelList 
                   dataKey="value" 
                   position="top" 
-                  formatter={(val: number) => `₹${Math.round(val)}`} 
+                  formatter={(val: any) => `₹${Math.round(Number(val))}`} 
                   style={{ fill: 'var(--text-secondary)', fontSize: '11px', fontWeight: 700 }} 
                   dy={-10} 
                 />
