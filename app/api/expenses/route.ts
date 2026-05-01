@@ -6,7 +6,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { amount, category, description, date, idempotencyKey } = body;
 
+    console.log('Creating expense with body:', body);
+
     if (!amount || !category || !date || !idempotencyKey) {
+      console.error('Validation failed: Missing fields');
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -14,20 +17,24 @@ export async function POST(request: Request) {
     const amountCents = Math.round(parseFloat(amount) * 100);
 
     if (isNaN(amountCents) || amountCents < 0) {
+      console.error('Validation failed: Invalid amount', amount);
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
     // Check for idempotency
+    console.log('Checking idempotency for:', idempotencyKey);
     const existingExpense = await prisma.expense.findUnique({
       where: { idempotencyKey },
     });
 
     if (existingExpense) {
+      console.log('Idempotency hit: Expense already exists');
       // If we already processed this request, safely return the existing resource
       return NextResponse.json(existingExpense, { status: 200 });
     }
 
     // Create the expense
+    console.log('Attempting to create expense in DB...');
     const expense = await prisma.expense.create({
       data: {
         idempotencyKey,
@@ -37,11 +44,15 @@ export async function POST(request: Request) {
         date: new Date(date),
       },
     });
+    console.log('Expense created successfully:', expense.id);
 
     return NextResponse.json(expense, { status: 201 });
-  } catch (error) {
-    console.error('Error creating expense:', error);
-    return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 });
+  } catch (error: any) {
+    console.error('CRITICAL ERROR in POST /api/expenses:', error);
+    return NextResponse.json({ 
+      error: 'Failed to create expense', 
+      details: error.message 
+    }, { status: 500 });
   }
 }
 
